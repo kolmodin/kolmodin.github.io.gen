@@ -1,8 +1,7 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-import           Data.Monoid (mappend)
+import           Data.Monoid ((<>))
 import           Hakyll
-
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -18,7 +17,7 @@ main = hakyll $ do
     match (fromList ["about.rst", "contact.markdown"]) $ do
         route   $ setExtension "html"
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/default.html" defaultContext
+            >>= loadAndApplyTemplate "templates/default.html" fullContext
             >>= relativizeUrls
 
     match "posts/*" $ do
@@ -33,9 +32,9 @@ main = hakyll $ do
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let archiveCtx =
-                    listField "posts" postCtx (return posts) `mappend`
-                    constField "title" "Archives"            `mappend`
-                    defaultContext
+                    listField "posts" postCtx (return posts)
+                    <> constField "title" "Archives"
+                    <> fullContext
 
             makeItem ""
                 >>= loadAndApplyTemplate "templates/archive.html" archiveCtx
@@ -48,9 +47,10 @@ main = hakyll $ do
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let indexCtx =
-                    listField "posts" postCtx (return posts) `mappend`
-                    constField "title" "Home"                `mappend`
-                    defaultContext
+                    listField "posts" postCtx (return posts)
+                    <> constField "title" "Home"
+                    <> fullContext
+                    <> field "isHome" (\_ -> return "yes")
 
             getResourceBody
                 >>= applyAsTemplate indexCtx
@@ -62,6 +62,10 @@ main = hakyll $ do
 
 --------------------------------------------------------------------------------
 postCtx :: Context String
-postCtx =
-    dateField "date" "%B %e, %Y" `mappend`
-    defaultContext
+postCtx = fullContext
+
+fullContext :: Context String
+fullContext =
+  field "siteTitle" (\_ -> return "Lennart Kolmodin")
+  <> dateField "date" "%B %e, %Y"
+  <> defaultContext
