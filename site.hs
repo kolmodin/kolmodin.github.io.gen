@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           Data.Monoid ((<>))
 import           Hakyll
+import           Hakyll.Web.Tags
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -20,11 +21,25 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/default.html" fullContext
             >>= relativizeUrls
 
+    tags <- buildTags "posts/*" (fromCapture "tags/*.html")
+    tagsRules tags $ \tag pattern -> do
+        let title = "Posts tagged \"" ++ tag ++ "\""
+        route idRoute
+        compile $ do
+            posts <- recentFirst =<< loadAll pattern
+            let ctx = constField "title" title
+                      <> listField "posts" postCtx (return posts)
+                      <> postCtx
+            makeItem ""
+                >>= loadAndApplyTemplate "templates/tag.html" ctx
+                >>= loadAndApplyTemplate "templates/default.html" ctx
+                >>= relativizeUrls
+
     match "posts/*" $ do
         route $ setExtension "html"
         compile $ pandocCompiler
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= loadAndApplyTemplate "templates/post.html"    (postCtxWithTags tags)
+            >>= loadAndApplyTemplate "templates/default.html" (postCtxWithTags tags)
             >>= relativizeUrls
 
     create ["archive.html"] $ do
@@ -32,7 +47,7 @@ main = hakyll $ do
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let archiveCtx =
-                    listField "posts" postCtx (return posts)
+                    listField "posts" (postCtxWithTags tags) (return posts)
                     <> constField "title" "Archives"
                     <> fullContext
 
@@ -47,7 +62,7 @@ main = hakyll $ do
         compile $ do
             posts <- recentFirst =<< loadAll "posts/*"
             let indexCtx =
-                    listField "posts" postCtx (return posts)
+                    listField "posts" (postCtxWithTags tags) (return posts)
                     <> constField "title" "Home"
                     <> fullContext
                     <> field "isHome" (\_ -> return "yes")
@@ -63,6 +78,9 @@ main = hakyll $ do
 --------------------------------------------------------------------------------
 postCtx :: Context String
 postCtx = fullContext
+
+postCtxWithTags :: Tags -> Context String
+postCtxWithTags tags = tagsField "tags" tags <> postCtx
 
 fullContext :: Context String
 fullContext =
