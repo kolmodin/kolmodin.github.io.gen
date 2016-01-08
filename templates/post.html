@@ -8,4 +8,22 @@
     Tags: $tags$
     $endif$
   </div>
+
+
+<div id="disqus_thread"></div>
+<script>
+var disqus_config = function () {
+  this.page.url = 'https://kolmodin.github.io$url$';
+  this.page.identifier = '$url$';
+  this.page.title = '$title$';
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+
+s.src = '//kolmodinblog.disqus.com/embed.js';
+
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
 </div>
